@@ -1,0 +1,37 @@
+body {
+  font-family: sans-serif;
+  background: #fff;
+  color: #000;
+  margin: 0;
+  padding: 20px;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #121212;
+    color: #fff;
+  }
+}
+.container {
+  max-width: 400px;
+  margin: auto;
+}
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+li {
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+  cursor: pointer;
+}
