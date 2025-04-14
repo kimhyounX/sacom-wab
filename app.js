@@ -3,7 +3,7 @@ function formatNotice(notice) {
   if (parts.length !== 4) return null;
   const year = "20" + parts[2];
   const number = parts[3].padStart(5, "0");
-  return \`\${parts[0]}-\${parts[1]}-\${year}-\${number}\`;
+  return `${parts[0]}-${parts[1]}-${year}-${number}`;
 }
 
 function handleSearch() {
@@ -14,8 +14,8 @@ function handleSearch() {
     return;
   }
 
-  const url = \`http://pawinhand.kr/link/linker.html?type=abandon&idx=\${formatted}\`;
-  window.open(url, "_blank");
+  const url = `http://pawinhand.kr/link/linker.html?type=abandon&idx=${formatted}`;
+  window.open(url, "_blank"); // 모바일에서 안 되면 location.href로 바꿔도 됨
 
   saveHistory(input);
   renderHistory();
@@ -24,7 +24,7 @@ function handleSearch() {
 function saveHistory(item) {
   let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
   history.unshift({ value: item, timestamp: new Date().toISOString() });
-  history = history.slice(0, 20);
+  history = history.slice(0, 20); // 최근 20개까지만 저장
   localStorage.setItem("searchHistory", JSON.stringify(history));
 }
 
@@ -44,4 +44,13 @@ function renderHistory() {
   });
 }
 
-window.onload = renderHistory;
+// ✅ DOM 로드 후 버튼 이벤트 연결
+window.onload = function () {
+  renderHistory();
+
+  const searchBtn = document.getElementById("searchBtn");
+  if (searchBtn) {
+    searchBtn.addEventListener("click", handleSearch);
+  }
+};
+
