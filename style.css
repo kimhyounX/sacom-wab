@@ -1,3 +1,4 @@
+
 body {
   font-family: sans-serif;
   background: #fff;
@@ -12,18 +13,21 @@ body {
   }
 }
 .container {
-  max-width: 400px;
+  max-width: 100%;
   margin: auto;
 }
-input {
+input, button {
   width: 100%;
-  padding: 10px;
+  padding: 14px;
   margin-top: 10px;
+  font-size: 18px;
+  box-sizing: border-box;
 }
 button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
+  background-color: #1e90ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
 }
 ul {
   list-style: none;
@@ -31,7 +35,8 @@ ul {
   margin-top: 20px;
 }
 li {
-  padding: 8px;
+  padding: 12px;
   border-bottom: 1px solid #ccc;
+  font-size: 16px;
   cursor: pointer;
 }
