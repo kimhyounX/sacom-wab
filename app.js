@@ -38,8 +38,8 @@ const REGION_MAP = {
   "제주": ["제주", "서귀포"]
 };
 
-const STORAGE_REGION_KEY = "selectedRegion";     // {sido, sigungu}
-const STORAGE_HISTORY_KEY = "searchHistory";     // [{sido,sigungu,value,timestamp}, ...]
+const STORAGE_REGION_KEY = "selectedRegion"; // {sido, sigungu}
+const STORAGE_HISTORY_KEY = "searchHistory"; // [{ value: "충북-청주-2026-00003", timestamp }, ...]
 const HISTORY_LIMIT = 20;
 
 function setSelectOptions(selectEl, options, placeholder) {
@@ -88,11 +88,8 @@ function setRegionUI(sido, sigungu) {
     const sigungus = REGION_MAP[sido] || [];
     setSelectOptions(sigunguEl, sigungus, "시/군/구 선택");
 
-    if (sigungu && sigungus.includes(sigungu)) {
-      sigunguEl.value = sigungu;
-    } else {
-      sigunguEl.value = "";
-    }
+    if (sigungu && sigungus.includes(sigungu)) sigunguEl.value = sigungu;
+    else sigunguEl.value = "";
   }
 }
 
@@ -100,16 +97,15 @@ function initRegionSelectsManual() {
   const sidoEl = document.getElementById("sidoSelect");
   const sigunguEl = document.getElementById("sigunguSelect");
 
-  const sidos = Object.keys(REGION_MAP).sort();
+  const sidos = Object.keys(REGION_MAP).sort(); // 시/도는 가나다
   setSelectOptions(sidoEl, sidos, "시/도 선택");
   setSelectOptions(sigunguEl, [], "시/군/구 선택");
 
-  // ✅ 최초 기본값: 충북/청주 + 저장값 우선
   const saved = loadSelectedRegion();
   const defaultSido = (saved && saved.sido) ? saved.sido : "충북";
   const defaultSigungu = (saved && saved.sigungu) ? saved.sigungu : "청주";
 
-  // 시도 변경 -> 시군구 옵션 갱신 + 저장
+  // 시도 변경 -> 시군구 갱신 + 저장
   sidoEl.addEventListener("change", () => {
     const sido = sidoEl.value;
     const sigungus = REGION_MAP[sido] || [];
@@ -123,36 +119,34 @@ function initRegionSelectsManual() {
     saveSelectedRegion(sidoEl.value, sigunguEl.value);
   });
 
-  // 저장값(또는 기본값) 적용
   setRegionUI(defaultSido, defaultSigungu);
-
-  // 저장값이 없었으면 최초 기본값 저장
   if (!saved) saveSelectedRegion(defaultSido, defaultSigungu);
 }
 
-// ✅ 입력 포맷 규칙 적용해서 formatted(idx) 만들기
+// 최종 idx 생성: 시도-시군구-YYYY-00000
+function buildFinalIdx(sido, sigungu, year4, numberRaw) {
+  const number5 = String(numberRaw).padStart(5, "0");
+  return `${sido}-${sigungu}-${year4}-${number5}`;
+}
+
+// 입력값 -> 최종 idx 반환 (기록도 최종 idx로 저장)
 function formatNotice(notice) {
   const raw = notice.trim();
   if (!raw) return null;
 
-  // 1) 숫자만 입력: "1" => 올해-1로 간주
+  // 1) 숫자만: "3" => 올해-3
   if (/^\d+$/.test(raw)) {
-    const year2 = String(new Date().getFullYear()).slice(-2); // 예: "26"
-    const number = raw.padStart(5, "0");
-
+    const year4 = String(new Date().getFullYear()); // 예: "2026"
     const { sido, sigungu } = getSelectedRegion();
     if (!sido || !sigungu) return null;
 
-    return {
-      formatted: `${sido}-${sigungu}-20${year2}-${number}`,
-      usedRegion: { sido, sigungu },
-      savedValue: `${year2}-${raw}` // 기록에는 "26-1" 형태로 저장
-    };
+    const formatted = buildFinalIdx(sido, sigungu, year4, raw);
+    return { formatted, savedValue: formatted };
   }
 
   const parts = raw.split("-");
 
-  // 2) "24-1" (2파트): 선택 지역 적용
+  // 2) "26-3" / "24-1" : 선택 지역 + 20YY
   if (parts.length === 2) {
     const yy = parts[0];
     const numRaw = parts[1];
@@ -162,17 +156,12 @@ function formatNotice(notice) {
     const { sido, sigungu } = getSelectedRegion();
     if (!sido || !sigungu) return null;
 
-    const year = "20" + yy;
-    const number = numRaw.padStart(5, "0");
-
-    return {
-      formatted: `${sido}-${sigungu}-${year}-${number}`,
-      usedRegion: { sido, sigungu },
-      savedValue: raw
-    };
+    const year4 = "20" + yy;
+    const formatted = buildFinalIdx(sido, sigungu, year4, numRaw);
+    return { formatted, savedValue: formatted };
   }
 
-  // 3) "충북-청주-24-1" 또는 "충북-청주-2024-1" (4파트): 입력 지역 그대로 적용
+  // 3) "충북-청주-24-1" / "충북-청주-2024-1" : 입력 지역 우선
   if (parts.length === 4) {
     const sido = parts[0];
     const sigungu = parts[1];
@@ -181,18 +170,13 @@ function formatNotice(notice) {
 
     if (!/^\d+$/.test(numRaw)) return null;
 
-    let year;
-    if (/^\d{2}$/.test(y)) year = "20" + y;
-    else if (/^\d{4}$/.test(y)) year = y;
+    let year4;
+    if (/^\d{2}$/.test(y)) year4 = "20" + y;
+    else if (/^\d{4}$/.test(y)) year4 = y;
     else return null;
 
-    const number = numRaw.padStart(5, "0");
-
-    return {
-      formatted: `${sido}-${sigungu}-${year}-${number}`,
-      usedRegion: { sido, sigungu },
-      savedValue: raw
-    };
+    const formatted = buildFinalIdx(sido, sigungu, year4, numRaw);
+    return { formatted, savedValue: formatted };
   }
 
   return null;
@@ -210,21 +194,23 @@ function handleSearch() {
   const url = `http://pawinhand.kr/link/linker.html?type=abandon&idx=${encodeURIComponent(result.formatted)}`;
   window.open(url, "_blank");
 
-  // ✅ 기록 저장: 지역 + 입력값(B)
-  saveHistory(result.usedRegion.sido, result.usedRegion.sigungu, result.savedValue);
+  // ✅ 기록은 최종 idx로 저장
+  saveHistory(result.savedValue);
   renderHistory();
 }
 
-function saveHistory(sido, sigungu, item) {
+function saveHistory(finalIdx) {
   let history = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY)) || [];
-  history.unshift({
-    sido,
-    sigungu,
-    value: item,
-    timestamp: new Date().toISOString()
-  });
+  history.unshift({ value: finalIdx, timestamp: new Date().toISOString() });
   history = history.slice(0, HISTORY_LIMIT);
   localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(history));
+}
+
+function parseIdxToRegion(idx) {
+  // "충북-청주-2026-00003" 기대
+  const parts = String(idx).split("-");
+  if (parts.length !== 4) return null;
+  return { sido: parts[0], sigungu: parts[1] };
 }
 
 function renderHistory() {
@@ -234,17 +220,18 @@ function renderHistory() {
 
   history.forEach((entry) => {
     const li = document.createElement("li");
-
-    // ✅ 표시도 B: 지역 + 입력값
-    li.textContent = `${entry.sido}-${entry.sigungu}  ${entry.value}`;
+    li.textContent = entry.value;
 
     li.onclick = () => {
-      // 기록 클릭 시 해당 지역으로 드롭다운도 맞춤 + 저장
-      if (entry.sido && entry.sigungu) {
-        setRegionUI(entry.sido, entry.sigungu);
-        saveSelectedRegion(entry.sido, entry.sigungu);
+      const region = parseIdxToRegion(entry.value);
+
+      // 기록에 포함된 지역으로 드롭다운 맞춤 + 저장
+      if (region && REGION_MAP[region.sido]) {
+        setRegionUI(region.sido, region.sigungu);
+        saveSelectedRegion(region.sido, region.sigungu);
       }
 
+      // 입력창에 최종 idx를 넣고 검색(호환: 4파트 처리됨)
       document.getElementById("noticeInput").value = entry.value;
       handleSearch();
     };
