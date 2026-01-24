@@ -11,10 +11,18 @@
 <body>
   <div class="container">
     <h1>새콤아 찾아줘 🐾</h1>
-    <input type="text" id="noticeInput" placeholder="예: 24-1만 입력하세요" autofocus>
+
+    <!-- ✅ 지역 선택(시/도, 시/군/구) -->
+    <div class="region-row">
+      <select id="sidoSelect" aria-label="시/도 선택"></select>
+      <select id="sigunguSelect" aria-label="시/군/구 선택"></select>
+    </div>
+
+    <input type="text" id="noticeInput" placeholder="예: 24-1 또는 1 또는 충북-청주-24-1" autofocus>
     <button id="searchBtn">검색</button>
     <ul id="historyList"></ul>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>
